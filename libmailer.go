@@ -60,8 +60,19 @@ func FormatEmailAddress(addr string) string {
 }
 
 //export SendMail
-func SendMail(smtpHost string, smtpPort int, username, password, from, to, subject, body string, cc, bcc []string, attachments []string) error {
-	return api.SendMail(smtpHost, smtpPort, username, password, from, to, subject, body, cc, bcc, attachments)
+func SendMail(smtpHost *C.char, smtpPort C.int, username, password, from, to, subject, body *C.char, cc, bcc, attachments []string) error {
+
+	return api.SendMail(
+		C.GoString(smtpHost),
+		int(smtpPort),
+		C.GoString(username),
+		C.GoString(password),
+		C.GoString(from),
+		C.GoString(to),
+		C.GoString(subject),
+		C.GoString(body),
+		nil, nil, nil,
+	)
 }
 
 //export SendRawEML
