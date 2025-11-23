@@ -1,4 +1,4 @@
-module libmailer
+module github.com/jelius-sama/libmailer
 
 go 1.24.5
 
