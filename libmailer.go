@@ -20,6 +20,10 @@ func LoadConfig() (*C.MailerConfig, error) {
 	var mailerConfig C.MailerConfig
 	cnf, err := api.LoadConfig()
 
+	if err != nil {
+		return nil, err
+	}
+
 	mailerConfig.Host = C.CString(cnf.Host)
 	mailerConfig.Port = C.int(cnf.Port)
 	mailerConfig.Username = C.CString(cnf.Username)
@@ -32,6 +36,10 @@ func LoadConfig() (*C.MailerConfig, error) {
 func LoadConfigFromPath(configPath string) (*C.MailerConfig, error) {
 	var mailerConfig C.MailerConfig
 	cnf, err := api.LoadConfigFromPath(configPath)
+
+	if err != nil {
+		return nil, err
+	}
 
 	mailerConfig.Host = C.CString(cnf.Host)
 	mailerConfig.Port = C.int(cnf.Port)
