@@ -5,7 +5,7 @@ package main
 import "C"
 
 import (
-	"libmailer/api"
+	"github.com/jelius-sama/libmailer/api"
 )
 
 //export ParseEmailAddress
