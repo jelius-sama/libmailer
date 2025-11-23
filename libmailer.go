@@ -1,19 +1,44 @@
 package main
 
 /*
- */
+typedef struct {
+	char *Host;
+	int Port;
+	char *Username;
+	char *Password;
+	char *From;
+} MailerConfig;
+*/
 import "C"
 
 import (
 	"github.com/jelius-sama/libmailer/api"
 )
 
-func LoadConfig() (*api.Config, error) {
-	return api.LoadConfig()
+//export LoadConfig
+func LoadConfig() (*C.MailerConfig, error) {
+	var mailerConfig C.MailerConfig
+	cnf, err := api.LoadConfig()
+
+	mailerConfig.Host = C.CString(cnf.Host)
+	mailerConfig.Port = C.int(cnf.Port)
+	mailerConfig.Username = C.CString(cnf.Username)
+	mailerConfig.Password = C.CString(cnf.Password)
+	mailerConfig.From = C.CString(cnf.From)
+	return &mailerConfig, err
 }
 
-func LoadConfigFromPath(configPath string) (*api.Config, error) {
-	return api.LoadConfigFromPath(configPath)
+//export LoadConfigFromPath
+func LoadConfigFromPath(configPath string) (*C.MailerConfig, error) {
+	var mailerConfig C.MailerConfig
+	cnf, err := api.LoadConfigFromPath(configPath)
+
+	mailerConfig.Host = C.CString(cnf.Host)
+	mailerConfig.Port = C.int(cnf.Port)
+	mailerConfig.Username = C.CString(cnf.Username)
+	mailerConfig.Password = C.CString(cnf.Password)
+	mailerConfig.From = C.CString(cnf.From)
+	return &mailerConfig, err
 }
 
 //export ParseEmailAddress
