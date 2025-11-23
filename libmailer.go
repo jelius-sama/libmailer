@@ -60,7 +60,7 @@ func FormatEmailAddress(addr string) string {
 }
 
 //export SendMail
-func SendMail(smtpHost *C.char, smtpPort C.int, username, password, from, to, subject, body *C.char, cc, bcc, attachments []string) error {
+func SendMail(smtpHost *C.char, smtpPort C.int, username, password, from, to, subject, body *C.char /* cc, bcc, attachments []string */) error {
 
 	return api.SendMail(
 		C.GoString(smtpHost),
