@@ -1,13 +1,49 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
 	gomail "gopkg.in/gomail.v2"
 	"io"
 	"net/mail"
 	"os"
+	"path/filepath"
 	"strings"
 )
+
+type Config struct {
+	Host     string `json:"host"`
+	Port     int    `json:"port"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+	From     string `json:"from"`
+}
+
+// LoadConfigFromPath loads configuration from a specific path
+func LoadConfigFromPath(configPath string) (*Config, error) {
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		return nil, fmt.Errorf("config file not found at %s: %w", configPath, err)
+	}
+
+	var config Config
+	if err := json.Unmarshal(data, &config); err != nil {
+		return nil, fmt.Errorf("invalid config file: %w", err)
+	}
+
+	return &config, nil
+}
+
+// LoadConfig attempts to load configuration from ~/.config/mailer/config.json
+func LoadConfig() (*Config, error) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return nil, fmt.Errorf("cannot determine home directory: %w", err)
+	}
+
+	configPath := filepath.Join(homeDir, ".config", "mailer", "config.json")
+	return LoadConfigFromPath(configPath)
+}
 
 // ParseEmailAddress handles email formats like "Name <email@domain.com>" or "email@domain.com"
 func ParseEmailAddress(addr string) (string, error) {

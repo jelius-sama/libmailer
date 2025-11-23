@@ -8,6 +8,14 @@ import (
 	"github.com/jelius-sama/libmailer/api"
 )
 
+func LoadConfig() (*api.Config, error) {
+	return api.LoadConfig()
+}
+
+func LoadConfigFromPath(configPath string) (*api.Config, error) {
+	return api.LoadConfigFromPath(configPath)
+}
+
 //export ParseEmailAddress
 func ParseEmailAddress(addr string) (string, error) {
 	return api.ParseEmailAddress(addr)
