@@ -58,7 +58,7 @@ import (
 
 ## Configuration
 
-The library automatically loads configuration from:
+The library can automatically loads configuration from:
 
 ```
 ~/.config/mailer/config.json
@@ -161,7 +161,7 @@ This will generate:
 
 Use them inside your C project:
 
-```
+```c
 #include "libmailer/libmailer.h"
 ```
 
@@ -175,33 +175,54 @@ gcc main.c -L./libmailer -lmailer -o myprog
 
 ## C API Overview
 
+All C API functions follow standard C idioms:
+
+* Functions return `int` status codes (`0` for success, `-1` for error)
+* Output values are returned via pointer parameters
+* Error messages are returned via `char**` output parameters
+* Always check return codes and free allocated memory
+
+---
+
 ### Load configuration
 
 ```c
-MailerConfig* cnf = NULL;
-char* err = NULL;
+MailerConfig *config = NULL;
+char *error = NULL;
 
-// Load configuration
-struct LoadConfig_return ret = LoadConfig();
-cnf = ret.r0; err = ret.r1;
-
-if (err != NULL) {
-    fprintf(stderr, "error: %s\n", err);
-    FreeCString(err);
+// Load configuration from default location
+int status = LoadConfig(&config, &error);
+if (status != 0) {
+    fprintf(stderr, "error: %s\n", error);
+    FreeCString(error);
     return 1;
 }
+
+// Use config...
+FreeMailerConfig(config);
 ```
 
 Or load from an explicit path:
 
 ```c
-struct LoadConfigFromPath_return ret = LoadConfigFromPath("/path/to/config.json");
+MailerConfig *config = NULL;
+char *error = NULL;
+
+int status = LoadConfigFromPath("/path/to/config.json", &config, &error);
+if (status != 0) {
+    fprintf(stderr, "error: %s\n", error);
+    FreeCString(error);
+    return 1;
+}
+
+// Use config...
+FreeMailerConfig(config);
 ```
 
 ### Free the config
 
 ```c
-FreeMailerConfig(cfg);
+FreeMailerConfig(config);
 ```
 
 ---
@@ -209,27 +230,26 @@ FreeMailerConfig(cfg);
 ### Parse an address
 
 ```c
-char *out;
-char *err;
+char *parsed = NULL;
+char *error = NULL;
 
-struct ParseEmailAddress_return ret = ParseEmailAddress("Name <test@example.com>");
-out = ret.r0; err = ret.r1;
-
-if (err != NULL) {
-    fprintf(stderr, "%s\n", err);
-    FreeCString(err);
+int status = ParseEmailAddress("Name <test@example.com>", &parsed, &error);
+if (status != 0) {
+    fprintf(stderr, "parse error: %s\n", error);
+    FreeCString(error);
 } else {
-    printf("parsed: %s\n", out);
-    FreeCString(out);
+    printf("parsed: %s\n", parsed);
+    FreeCString(parsed);
 }
 ```
 
 ### Format an address
 
 ```c
-char *out = FormatEmailAddress("test@example.com");
-printf("formatted: %s\n", out);
-FreeCString(out);
+char *formatted = NULL;
+FormatEmailAddress("test@example.com", &formatted);
+printf("formatted: %s\n", formatted);
+FreeCString(formatted);
 ```
 
 ---
@@ -237,7 +257,9 @@ FreeCString(out);
 ### Sending mail
 
 ```c
-char *err = SendMail(
+char *error = NULL;
+
+int status = SendMail(
     "smtp.example.com",
     587,
     "user@example.com",
@@ -248,25 +270,40 @@ char *err = SendMail(
     "Body text",
     NULL,      // CC (StrArr*)
     NULL,      // BCC (StrArr*)
-    NULL       // Attachments (StrArr*)
+    NULL,      // Attachments (StrArr*)
+    &error
 );
 
-if (err != NULL) {
-    fprintf(stderr, "send error: %s\n", err);
-    FreeCString(err);
+if (status != 0) {
+    fprintf(stderr, "send error: %s\n", error);
+    FreeCString(error);
+    return 1;
 }
+
+printf("Mail sent successfully\n");
 ```
 
 ### Sending a raw `.eml`
 
 ```c
-char *err = SendRawEML(
+char *error = NULL;
+
+int status = SendRawEML(
     "smtp.example.com",
     587,
     "user@example.com",
     "pass123",
-    "message.eml"
+    "message.eml",
+    &error
 );
+
+if (status != 0) {
+    fprintf(stderr, "send error: %s\n", error);
+    FreeCString(error);
+    return 1;
+}
+
+printf("EML sent successfully\n");
 ```
 
 ---
@@ -285,8 +322,73 @@ typedef struct {
 } StrArr;
 ```
 
-Allocate and free manually as normal C memory.
-The library provides `FreeStrArr` to release one created on your side.
+Example of creating a StrArr with CC recipients:
+
+```c
+// Allocate array of char pointers
+char **cc_array = malloc(2 * sizeof(char*));
+cc_array[0] = strdup("cc1@example.com");
+cc_array[1] = strdup("cc2@example.com");
+
+// Create StrArr wrapper
+StrArr *cc = malloc(sizeof(StrArr));
+cc->str = (char*)cc_array;  // pointer to first element
+cc->count = 2;
+cc->len = 2 * sizeof(char*);
+
+// Use in SendMail
+char *error = NULL;
+int status = SendMail(
+    host, port, username, password,
+    from, to, subject, body,
+    cc,    // CC recipients
+    NULL,  // BCC
+    NULL,  // Attachments
+    &error
+);
+
+// Clean up
+FreeStrArr(cc);
+```
+
+The library provides `FreeStrArr` to properly deallocate a StrArr and all its contained strings.
+
+---
+
+## Memory Management
+
+**Important**: The C API allocates memory that must be freed by the caller:
+
+* `FreeCString(char*)` - Free individual strings returned by functions
+* `FreeMailerConfig(MailerConfig*)` - Free configuration structures
+* `FreeStrArr(StrArr*)` - Free string array structures
+
+Always free allocated memory to prevent leaks.
+
+---
+
+## Error Handling Pattern
+
+All functions that can fail follow this pattern:
+
+```c
+OutputType *output = NULL;
+char *error = NULL;
+
+int status = FunctionName(inputs..., &output, &error);
+if (status != 0) {
+    // Handle error
+    fprintf(stderr, "Error: %s\n", error);
+    FreeCString(error);
+    return status;
+}
+
+// Success - use output
+// ...
+
+// Clean up
+FreeOutputType(output);
+```
 
 ---
 

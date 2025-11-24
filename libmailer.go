@@ -53,10 +53,12 @@ func FreeCString(cstr *C.char) {
 }
 
 //export LoadConfig
-func LoadConfig() (*C.MailerConfig, *C.char) {
+func LoadConfig(out_config **C.MailerConfig, out_error **C.char) C.int {
 	cnf, err := api.LoadConfig()
 	if err != nil {
-		return nil, C.CString(err.Error())
+		*out_error = C.CString(err.Error())
+		*out_config = nil
+		return -1
 	}
 
 	// Allocate MailerConfig in C memory
@@ -69,15 +71,19 @@ func LoadConfig() (*C.MailerConfig, *C.char) {
 	mailerConfig.Password = C.CString(cnf.Password)
 	mailerConfig.From = C.CString(cnf.From)
 
-	return mailerConfig, nil
+	*out_config = mailerConfig
+	*out_error = nil
+	return 0
 }
 
 //export LoadConfigFromPath
-func LoadConfigFromPath(configPath *C.char) (*C.MailerConfig, *C.char) {
+func LoadConfigFromPath(configPath *C.char, out_config **C.MailerConfig, out_error **C.char) C.int {
 	cnf, err := api.LoadConfigFromPath(C.GoString(configPath))
 
 	if err != nil {
-		return nil, C.CString(err.Error())
+		*out_error = C.CString(err.Error())
+		*out_config = nil
+		return -1
 	}
 
 	// Allocate MailerConfig in C memory
@@ -89,7 +95,10 @@ func LoadConfigFromPath(configPath *C.char) (*C.MailerConfig, *C.char) {
 	mailerConfig.Username = C.CString(cnf.Username)
 	mailerConfig.Password = C.CString(cnf.Password)
 	mailerConfig.From = C.CString(cnf.From)
-	return mailerConfig, nil
+
+	*out_config = mailerConfig
+	*out_error = nil
+	return 0
 }
 
 //export FreeMailerConfig
@@ -109,23 +118,27 @@ func FreeMailerConfig(cfg *C.MailerConfig) {
 }
 
 //export ParseEmailAddress
-func ParseEmailAddress(addr *C.char) (*C.char, *C.char) {
+func ParseEmailAddress(addr *C.char, out_parsed **C.char, out_error **C.char) C.int {
 	parsed, err := api.ParseEmailAddress(C.GoString(addr))
 
 	if err != nil {
-		return nil, C.CString(err.Error())
+		*out_error = C.CString(err.Error())
+		*out_parsed = nil
+		return -1
 	}
 
-	return C.CString(parsed), nil
+	*out_parsed = C.CString(parsed)
+	*out_error = nil
+	return 0
 }
 
 //export FormatEmailAddress
-func FormatEmailAddress(addr *C.char) *C.char {
-	return C.CString(api.FormatEmailAddress(C.GoString(addr)))
+func FormatEmailAddress(addr *C.char, out_formatted **C.char) {
+	*out_formatted = C.CString(api.FormatEmailAddress(C.GoString(addr)))
 }
 
 //export SendMail
-func SendMail(smtpHost *C.char, smtpPort C.int, username, password, from, to, subject, body *C.char, cc, bcc, attachments *C.StrArr) *C.char {
+func SendMail(smtpHost *C.char, smtpPort C.int, username, password, from, to, subject, body *C.char, cc, bcc, attachments *C.StrArr, out_error **C.char) C.int {
 	ccSlice := strArrToSlice(cc)
 	bccSlice := strArrToSlice(bcc)
 	attachSlice := strArrToSlice(attachments)
@@ -145,10 +158,12 @@ func SendMail(smtpHost *C.char, smtpPort C.int, username, password, from, to, su
 	)
 
 	if err != nil {
-		return C.CString(err.Error())
+		*out_error = C.CString(err.Error())
+		return -1
 	}
 
-	return nil
+	*out_error = nil
+	return 0
 }
 
 //export FreeStrArr
@@ -174,13 +189,15 @@ func FreeStrArr(arr *C.StrArr) {
 }
 
 //export SendRawEML
-func SendRawEML(smtpHost *C.char, smtpPort C.int, username, password, emlPath *C.char) *C.char {
+func SendRawEML(smtpHost *C.char, smtpPort C.int, username, password, emlPath *C.char, out_error **C.char) C.int {
 	err := api.SendRawEML(C.GoString(smtpHost), int(smtpPort), C.GoString(username), C.GoString(password), C.GoString(emlPath))
 	if err != nil {
-		return C.CString(err.Error())
+		*out_error = C.CString(err.Error())
+		return -1
 	}
 
-	return nil
+	*out_error = nil
+	return 0
 }
 
 func main() {}
