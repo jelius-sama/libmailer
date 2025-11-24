@@ -130,7 +130,7 @@ func SendMail(smtpHost *C.char, smtpPort C.int, username, password, from, to, su
 	bccSlice := strArrToSlice(bcc)
 	attachSlice := strArrToSlice(attachments)
 
-	return C.CString(api.SendMail(
+	err := api.SendMail(
 		C.GoString(smtpHost),
 		int(smtpPort),
 		C.GoString(username),
@@ -142,7 +142,13 @@ func SendMail(smtpHost *C.char, smtpPort C.int, username, password, from, to, su
 		ccSlice,
 		bccSlice,
 		attachSlice,
-	).Error())
+	)
+
+	if err != nil {
+		return C.CString(err.Error())
+	}
+
+	return nil
 }
 
 //export FreeStrArr
@@ -169,7 +175,12 @@ func FreeStrArr(arr *C.StrArr) {
 
 //export SendRawEML
 func SendRawEML(smtpHost *C.char, smtpPort C.int, username, password, emlPath *C.char) *C.char {
-	return C.CString(api.SendRawEML(C.GoString(smtpHost), int(smtpPort), C.GoString(username), C.GoString(password), C.GoString(emlPath)).Error())
+	err := api.SendRawEML(C.GoString(smtpHost), int(smtpPort), C.GoString(username), C.GoString(password), C.GoString(emlPath))
+	if err != nil {
+		return C.CString(err.Error())
+	}
+
+	return nil
 }
 
 func main() {}
