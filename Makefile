@@ -1,2 +1,2 @@
 libmailer:
-	go build -buildmode=c-archive -o ./libmailer.a ./libmailer.go
+	go build -buildmode=c-archive -tags netgo -ldflags '-extldflags "-static"' -o ./libmailer.a ./libmailer.go

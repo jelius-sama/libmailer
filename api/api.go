@@ -5,16 +5,11 @@ import (
 	"fmt"
 	gomail "gopkg.in/gomail.v2"
 	"io"
-	"net"
 	"net/mail"
 	"os"
 	"path/filepath"
 	"strings"
 )
-
-func init() {
-	net.DefaultResolver.PreferGo = true
-}
 
 type Config struct {
 	Host     string `json:"host"`
